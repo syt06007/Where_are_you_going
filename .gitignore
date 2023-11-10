@@ -1,0 +1,7 @@
+posenet/dataset/images/
+
+posenet/dataset/raw/
+
+runs/
+
+best_model/
