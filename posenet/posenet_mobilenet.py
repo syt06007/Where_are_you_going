@@ -2,29 +2,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from torchvision.models import resnet50
-# from googlenet import GoogLeNet
+from torchvision.models import mobilenet_v3_large
+
 
 class PoseNet(nn.Module):
     def __init__(self, with_embedding=False):
         super(PoseNet, self).__init__()
-
-        # self.backbone = GoogLeNet(with_aux=True)
-        self.regressor1 = Regression('regress1')
-        self.regressor2 = Regression('regress2')
         self.regressor3 = Regression('regress3', with_embedding=with_embedding)
-        # self.training =  True
 
-
-        resnet = resnet50(pretrained=True)
+        resnet = mobilenet_v3_large(pretrained=True)
         backbone = nn.Sequential(*list(resnet.children())[:-2])
         backbone.eval()
+
         for param in backbone.parameters():
             param.requires_grad = False
         self.backbone = backbone
-
-        # self.backbone = resnet50(pretrained=True)
-
 
     def forward(self, x):
 
@@ -33,7 +25,6 @@ class PoseNet(nn.Module):
 
         return pose[0]
 
-    # def loss_(self, batch):
 
 class Regression(nn.Module):
     """Pose regression module.
@@ -49,22 +40,12 @@ class Regression(nn.Module):
         super(Regression, self).__init__()
         conv_in = {"regress1": 512, "regress2": 528}
         self.with_embedding = with_embedding
-        if regid != "regress3":
-            self.projection = nn.Sequential(nn.AvgPool2d(kernel_size=5, stride=3),
-                                            nn.Conv2d(conv_in[regid], 128, kernel_size=1),
-                                            nn.ReLU())
-            self.regress_fc_pose = nn.Sequential(nn.Linear(2048, 1024),
-                                            nn.ReLU(),
-                                            nn.Dropout(0.5))
-            self.regress_fc_xyz = nn.Linear(1024, 3)
-            self.regress_fc_wpqr = nn.Linear(1024, 4)
-        else: # 'regress3'
-            self.projection = nn.AvgPool2d(kernel_size=7, stride=1)
-            self.regress_fc_pose = nn.Sequential(nn.Linear(2048, 2048),
-                                            nn.ReLU(),
-                                            nn.Dropout(0.5))
-            self.regress_fc_xyz = nn.Linear(2048, 2)
-            self.regress_fc_wpqr = nn.Linear(2048, 4)
+        
+        self.projection = nn.AvgPool2d(kernel_size=(15, 9), stride=1)
+        self.regress_fc_pose = nn.Sequential(nn.Linear(960, 2048),
+                                        nn.ReLU(),
+                                        nn.Dropout(0.5))
+        self.regress_fc_xyz = nn.Linear(2048, 2)
 
     def forward(self, x):
         x = self.projection(x)
@@ -80,7 +61,7 @@ class Regression(nn.Module):
 if __name__ == '__main__':
     net = PoseNet().cuda()
     from thop import profile
-    pseudo_input = torch.randn(32,3,224,224).cuda()
+    pseudo_input = torch.randn(32,3,480,270).cuda()
 
     flops, params = profile(net, inputs =(pseudo_input,))
 

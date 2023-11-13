@@ -4,4 +4,8 @@ posenet/dataset/raw/
 
 runs/
 
+posenet/runs/
+
 best_model/
+
+posenet/nohup.out

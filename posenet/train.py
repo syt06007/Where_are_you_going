@@ -14,7 +14,8 @@ import numpy as np
 import os
 
 from dataset import Img_dataset
-from posenet_resnet50 import PoseNet
+# from posenet_resnet50 import PoseNet
+from posenet_mobilenet import PoseNet
 
 # Fix Seed ------------------------------------------------
 import random
@@ -34,7 +35,7 @@ def parse_args():
     parser.add_argument('--device', type=str, default='cuda:0')
     parser.add_argument('--parallel', type=bool, default=False)
     parser.add_argument('--num_workers', type=int, default=10)
-    parser.add_argument('--model_name', type=str, default='PoseNet')
+    parser.add_argument('--model_name', type=str, default='PoseNet_mobilenet')
     parser.add_argument('--trainset_dir', type=str, default='./dataset/training/')
     parser.add_argument('--validset_dir', type=str, default='./dataset/validation/')
     parser.add_argument('--batch_size', type=int, default=32) 
@@ -65,10 +66,10 @@ def train(cfg):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=cfg.n_steps, gamma=cfg.gamma)
     scheduler._step_count = 0
 
-    mean=[0.49, 0.486, 0.482] 
-    std=[0.197, 0.189, 0.187]
+    mean=[0.491, 0.472, 0.483] 
+    std=[0.224, 0.221, 0.223]
 
-    train_dataset = Img_dataset(root_dir = 'dataset', is_train=True, transform=transforms.Compose([transforms.Resize((224,224)), transforms.Normalize(mean, std)]))
+    train_dataset = Img_dataset(root_dir = 'dataset', is_train=True, transform=transforms.Compose([transforms.Resize((480,270)), transforms.Normalize(mean, std)]))
     train_loader = DataLoader(train_dataset, batch_size = cfg.batch_size, shuffle = True, num_workers=cfg.num_workers)
 
     best_metric_value = 10000
@@ -108,9 +109,9 @@ def validation(net, cfg):
     net.eval()
     criterion_Loss = torch.nn.MSELoss().to(cfg.device)
 
-    mean=[0.49, 0.486, 0.482] 
-    std=[0.197, 0.189, 0.187]
-    val_dataset = Img_dataset(root_dir = 'dataset', is_train=False, transform=transforms.Compose([transforms.Resize((224,224)), transforms.Normalize(mean, std)]))
+    mean=[0.491, 0.472, 0.483] 
+    std=[0.224, 0.221, 0.223]
+    val_dataset = Img_dataset(root_dir = 'dataset', is_train=False, transform=transforms.Compose([transforms.Resize((480, 270)), transforms.Normalize(mean, std)]))
     val_loader = DataLoader(val_dataset, batch_size = cfg.batch_size, shuffle = True, num_workers=cfg.num_workers)
 
     with torch.no_grad():

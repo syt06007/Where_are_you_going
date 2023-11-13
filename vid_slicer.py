@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 
-root = 'data/raw/20231105_145904.mp4'
+root = 'posenet/dataset/raw/20231112_211508.mp4'
 vid_path1 = root
 
 path_lst = [vid_path1]
@@ -34,7 +34,7 @@ for vid_path in path_lst:
         if ret == False:
             break
         if int(video.get(1)) % 1 == 0 :
-            cv2.imwrite('data/images' + f'/frame{str(count).zfill(5)}.jpg', img)
+            cv2.imwrite('posenet/dataset/images' + f'/frame{str(count).zfill(5)}.jpg', img)
             print('Saved frame number :', str(int(video.get(1))))
             count += 1
 

@@ -1,18 +1,17 @@
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
-from torch.utils.data import DataLoader
 from torchvision import transforms
 
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+
 import argparse
-import time
 import numpy as np
 import os
+import cv2
+from PIL import Image
+from glob import glob
 
-from dataset import Img_dataset
-from posenet_resnet50 import PoseNet
+from posenet_mobilenet import PoseNet
 
 # Fix Seed ------------------------------------------------
 import random
@@ -40,7 +39,7 @@ def parse_args():
     parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs to train')
     parser.add_argument('--n_steps', type=int, default=50, help='number of epochs to update learning rate')
     parser.add_argument('--gamma', type=float, default=0.5, help='learning rate decaying factor')
-    parser.add_argument('--model_path', type=str, default='best_model/best_model_130.pt')
+    parser.add_argument('--model_path', type=str, default='best_model/best_model_44.pt')
 
     return parser.parse_args()
 
@@ -55,27 +54,26 @@ def test_vis(cfg):
     net.to(cfg.device)
     net.load_state_dict(torch.load(cfg.model_path))
     net.eval()
+
+    mean=[0.491, 0.472, 0.483] 
+    std=[0.224, 0.221, 0.223]
+    tf = transforms.Compose([transforms.Resize((480,270)), transforms.ToTensor(), transforms.Normalize(mean, std)])
     
-    mean=[0.49, 0.486, 0.482] 
-    std=[0.197, 0.189, 0.187]
-    val_dataset = Img_dataset(root_dir = 'dataset', is_train=False, transform=transforms.Compose([transforms.Resize((224,224)), transforms.Normalize(mean, std)]))
-    val_loader = DataLoader(val_dataset, batch_size = cfg.batch_size, shuffle = True, num_workers=cfg.num_workers)
+    data_list = glob('test_img/*.jpg')
+    data_list.sort()
+    print(data_list)
+    for data_path in data_list:
+        cv_frame = cv2.imread(data_path, cv2.IMREAD_COLOR)
+        cv_frame = cv2.cvtColor(cv_frame, cv2.COLOR_BGR2RGB)
+        frame = Image.fromarray(cv_frame)
+        frame = tf(frame).to(device)
+        
+        pose = net(frame.unsqueeze(0))
+        # pose = pose.cpu().detach().numpy()
+        print(pose)
 
-    criterion_Loss = torch.nn.MSELoss().to(cfg.device)
 
-    output_list = []
-    with torch.no_grad():
-        for idx, data in enumerate(val_loader):
-            # print()
-            label = data['label'].to(cfg.device)
-            input = data['input'].to(cfg.device)
 
-            output = net(input)
-
-            op = output.cpu()
-
-            metric_value = criterion_Loss(output, label).data.cpu()
-            a = 1
 
 
 
